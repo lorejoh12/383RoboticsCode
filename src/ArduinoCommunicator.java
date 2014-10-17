@@ -9,12 +9,12 @@ import java.util.Enumeration;
 
 public class ArduinoCommunicator implements SerialPortEventListener {
 	SerialPort serialPort;
-        /** The port we're normally going to use. */
+	/** The port we're normally going to use. */
 	private static final String PORT_NAMES[] = { 
-			"/dev/tty.usbserial-A9007UX1", // Mac OS X
-			"/dev/ttyUSB0", // Linux
-			"COM3", // Windows
-			};
+		"/dev/tty.usbserial-A9007UX1", // Mac OS X
+		"/dev/ttyUSB0", // Linux
+		"COM5", // Windows
+	};
 	/** Buffered input stream from the port */
 	private InputStream input;
 	/** The output stream to the port */
@@ -25,8 +25,8 @@ public class ArduinoCommunicator implements SerialPortEventListener {
 	private static final int DATA_RATE = 9600;
 	public boolean ready;
 
-	
-	public ArduinoCommunicator()
+
+	public ArduinoCommunicator() throws Exception
 	{
 		System.out.println("LOGGING:    INITIALIZING ARDUINO COMMUNICATOR");
 		ready = false;
@@ -40,16 +40,15 @@ public class ArduinoCommunicator implements SerialPortEventListener {
 		System.out.println("LOGGING:    ARDUINO COMMUNICATOR STARTED");
 	}
 	//Opens connection
-	public void initialize() {
+	public void initialize() throws Exception{
 		CommPortIdentifier portId = null;
 		Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
 
 		// iterate through, looking for the port
 		while (portEnum.hasMoreElements()) {
 			CommPortIdentifier currPortId = (CommPortIdentifier) portEnum.nextElement();
-//			System.out.println("currPortId.getName() = "+currPortId.getName() + "\n");
+			//			System.out.println("currPortId.getName() = "+currPortId.getName() + "\n");
 			for (String portName : PORT_NAMES) {
-//				System.out.println(portName);
 				if (currPortId.getName().equals(portName)) {
 					portId = currPortId;
 					break;
@@ -62,27 +61,23 @@ public class ArduinoCommunicator implements SerialPortEventListener {
 			return;
 		}
 
-		try {
-			// open serial port, and use class name for the appName.
-			serialPort = (SerialPort) portId.open(this.getClass().getName(),
-					TIME_OUT);
+		// open serial port, and use class name for the appName.
+		serialPort = (SerialPort) portId.open(this.getClass().getName(),
+				TIME_OUT);
 
-			// set port parameters
-			serialPort.setSerialPortParams(DATA_RATE,
-					SerialPort.DATABITS_8,
-					SerialPort.STOPBITS_1,
-					SerialPort.PARITY_NONE);
+		// set port parameters
+		serialPort.setSerialPortParams(DATA_RATE,
+				SerialPort.DATABITS_8,
+				SerialPort.STOPBITS_1,
+				SerialPort.PARITY_NONE);
 
-			// open the streams
-			input = serialPort.getInputStream();
-			output = serialPort.getOutputStream();
+		// open the streams
+		input = serialPort.getInputStream();
+		output = serialPort.getOutputStream();
 
-			// add event listeners
-			serialPort.addEventListener(this);
-			serialPort.notifyOnDataAvailable(true);
-		} catch (Exception e) {
-			System.err.println(e.toString());
-		}
+		// add event listeners
+		serialPort.addEventListener(this);
+		serialPort.notifyOnDataAvailable(true);
 	}
 
 	/**
@@ -120,16 +115,12 @@ public class ArduinoCommunicator implements SerialPortEventListener {
 		}
 		// Ignore all the other eventTypes, but you should consider the other ones.
 	}
-	
-	public synchronized void serialWrite(String s)
+
+	public synchronized void serialWrite(String s) throws Exception
 	{
 		System.out.println("LOGGING:      WRITING TO ARDUINOCOMMUNICATOR");
-		try {
-			output.write(s.getBytes());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		output.write(s.getBytes());
+
 	}
 
 	public static void main(String[] args) {

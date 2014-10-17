@@ -9,7 +9,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.wb.swt.SWTResourceManager;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 
@@ -37,8 +36,10 @@ public class Bartender {
 			mc.setup();
 
 			// Create and launch application
-			Bartender window = new Bartender();
-			window.open();
+//			Bartender window = new Bartender();
+//			window.open();
+			
+			mc.finish();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

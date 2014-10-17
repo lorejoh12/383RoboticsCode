@@ -7,50 +7,55 @@ public class MainController
 	public MainController()
 	{
 		commComm = new CommCommunicator();
-		ardComm = new ArduinoCommunicator();
+		try {
+			ardComm = new ArduinoCommunicator();
+		} catch (Exception e) {
+			commComm.finish();
+			e.printStackTrace();
+		}
 		currLocation = 1;
 	}
-	private void closeGripper(int delay) throws InterruptedException
+	private void closeGripper(int delay) throws Exception
 	{
 		ardComm.serialWrite("C");
 		Thread.sleep(delay);
 	}
-	private void openGripper(int delay) throws InterruptedException
+	private void openGripper(int delay) throws Exception
 	{
 		ardComm.serialWrite("O");
 		Thread.sleep(delay);
 	}
-	private void rotateR(int delay) throws InterruptedException
+	private void rotateR(int delay) throws Exception
 	{
 		ardComm.serialWrite("R");
 		Thread.sleep(delay);
 	}
-	private void rotateL(int delay) throws InterruptedException
+	private void rotateL(int delay) throws Exception
 	{
 		ardComm.serialWrite("L");
 		Thread.sleep(delay);
 	}
-	private void endRotate(int delay) throws InterruptedException
+	private void endRotate(int delay) throws Exception
 	{
 		ardComm.serialWrite("S");
 		Thread.sleep(delay);
 	}
-	private void upCup() throws InterruptedException
+	private void upCup() throws Exception
 	{
 		commComm.moveToLocation(CommCommunicator.UP_CUP);
 		Thread.sleep(4000);
 	}
-	private void downCup() throws InterruptedException
+	private void downCup() throws Exception
 	{
 		commComm.moveToLocation(CommCommunicator.DOWN_CUP);
 		Thread.sleep(4000);
 	}
-	private void allOff()
+	private void allOff() throws Exception
 	{
 		ardComm.serialWrite("B");
 	}
 	
-	private void moveToLocation(int nextLocation) throws InterruptedException
+	private void moveToLocation(int nextLocation) throws Exception
 	{
 		int diff = nextLocation - currLocation;
 		if(diff == 0) return;
@@ -71,14 +76,25 @@ public class MainController
 	{
 		commComm.moveToLocation("XR1\r");
 		Thread.sleep(5000);
+		commComm.moveToLocation("XR2\r");
+		Thread.sleep(5000);
+		commComm.moveToLocation("XR3\r");
+		Thread.sleep(5000);
+		commComm.moveToLocation("XR4\r");
+		Thread.sleep(5000);
+		commComm.moveToLocation("XR5\r");
+		Thread.sleep(5000);
+		commComm.moveToLocation("XR6\r");
+		Thread.sleep(5000);
+		commComm.moveToLocation("XR7\r");
 		
-		ardComm.serialWrite("E");
-		while (!ardComm.ready){
-			Thread.sleep(2000);
-		}
+//		ardComm.serialWrite("E");
+//		while (!ardComm.ready){
+//			Thread.sleep(2000);
+//		}
 	}
 	
-	private void cupRoutine() throws InterruptedException
+	private void cupRoutine() throws Exception
 	{
 		upCup();
 		openGripper(2000);
@@ -89,7 +105,7 @@ public class MainController
 		rotateL(550);
 		endRotate(1000);
 	}
-	private void placeRoutine() throws InterruptedException
+	private void placeRoutine() throws Exception
 	{
 		moveToLocation(1);
 		upCup();
@@ -104,7 +120,7 @@ public class MainController
 		allOff();
 	}
 	
-	public void makeDrink(int locations[]) throws InterruptedException
+	public void makeDrink(int locations[]) throws Exception
 	{
 		cupRoutine();
 		for(int i = 0; i<locations.length;i++){
@@ -151,7 +167,7 @@ public class MainController
 			mc.setup();
 			int k[] = {3,1,2};
 			mc.makeDrink(k);
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
 			mc.ardComm.close();
 			mc.commComm.finish();
 			e.printStackTrace();
@@ -159,6 +175,10 @@ public class MainController
 		mc.ardComm.close();
 		mc.commComm.finish();
 
+	}
+	
+	public void finish(){
+		commComm.finish();
 	}
 	
 	
