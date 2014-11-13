@@ -1,0 +1,58 @@
+{% extends 'admin/layout' %}
+{% block body %}
+<div class="row-fluid">
+    <div class="span6 admin-box">
+       <h2>{{ title }}</h2>
+       {% if saved %}
+          <div class="alert"> Your changes have been saved.  </div>
+       {% endif %}
+       {% if booze and booze.is_abstract() %}
+           <div class="attention">
+       {% else %}
+           <div class="forms">
+       {% endif %}
+          <form method="POST" action="/admin/booze/save">
+             {% if booze and booze.is_abstract() %}
+                 <p>NOTE: This is the placeholder booze for a booze group!</p></br>
+             {% endif %}
+             <div>{{ form.name.label }}{{ form.name(class="form-element") }}</div>
+             {% if form.name.errors %}
+                 <ul class="errors">{% for error in form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+             {% endif %}
+             <div>{{ form.desc.label }}{{ form.desc(class="form-element") }}</div>
+             {% if form.desc.errors %}
+                 <ul class="errors">{% for error in form.desc.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+             {% endif %}
+             <div>{{ form.abv.label }}{{ form.abv(class="form-element") }}</div>
+             {% if form.abv.errors %}
+                 <ul class="errors">{% for error in form.abv.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+             {% endif %}
+             <div>{{ form.type.label }}{{ form.type(class="form-element") }}</div>
+             {% if form.type.errors %}
+                 <ul class="errors">{% for error in form.type.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+             {% endif %}
+             {{ form.id() }}
+             <div style="margin-top: 20px">
+                 {{ form.save(class="btn btn-large btn-primary submit-button") }}
+             </div>
+          </form>
+       </div>
+    </div>
+
+    <div class="span6 admin-box">
+       <div style="float: right; padding-top: 10px">
+          <a href="/admin/booze" class="btn btn-large">add new booze</a>
+       </div>
+       <h2>Booze list</h2>
+       <table class="table table-striped table-bordered">
+          {% for booze in boozes %}
+            <tr><td><a href="/admin/booze/edit/{{booze.id}}">{{ booze.name }}</a>
+            {% if booze.is_abstract() %}
+               (abstract)
+            {% endif %}
+            </li>
+          {% endfor %}
+        </table>
+   </div>
+</div>
+{% endblock %}

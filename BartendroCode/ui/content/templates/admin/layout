@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ title }}</title>
+  <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.css">
+  <link rel="stylesheet" type="text/css" href="/static/css/bartendro.css">
+  <link rel="stylesheet" type="text/css" href="/static/css/bartendro-theme/jquery-ui-1.10.3.custom.min.css" />
+  <link rel="stylesheet" type="text/css" href="/static/css/jquery.fileupload-ui.css" />
+  <link rel="icon" type="image/vnd.microsoft.icon" href="/static/images/icon.ico">
+</head>
+<body>
+<div class="navbar navbar-inverse">
+    <div class="navbar-inner">
+        <ul class="nav">
+            <li><a href="/">menu</a></li>
+            {% if current_user.is_authenticated() %}
+                <li><a href="/admin">dispensers</a></li>
+                {% if not options.i_am_shotbot %}
+                    <li><a href="/admin/drink">drinks</a></li>
+                {% endif %}
+                <li><a href="/admin/booze">booze</a></li>
+                <li><a href="/admin/options">options</a></li>
+                {% if options.use_liquid_level_sensors %}
+                   <li><a href="/admin/liquidlevel">liquid level</a></li>
+                {% endif %}
+                <li><a href="/admin/debug">debug</a></li>
+                <li><a href="/admin/logout">logout</a></li>
+            {% endif %}
+        </ul>
+        <div class="bartendro-logo">
+            <a href="/"><img class="bartendro-logo-img" src="/static/images/bartendro-logo.png"></a>
+        </div>
+        <div class="party-robot">
+            <a href="/"><img class="party-robot-img" src="/static/images/partyrobot.png"></a>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    {% block body %}{% endblock %}
+</div>
+<script type="text/javascript">
+function home()
+{
+    window.location = "/";
+}
+function admin()
+{
+    window.location = "/admin";
+}
+</script>
+</body>
+</html>

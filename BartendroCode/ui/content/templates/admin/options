@@ -1,0 +1,381 @@
+{% extends 'admin/layout' %}
+{% block body %}
+<div class="row-fluid">
+    <div class="span8 admin-box-full">
+        <h2>{{ title }}</h2>
+        <div class="alert" id="status-message" style="display: none"></div>
+        <form id="options-form">
+            <fieldset>
+                <h4>General options</h4>
+                <div style="margin-left: 15px">
+                    <div>
+                        <label for="option-use-liquid-sensors" class="checkbox">
+                             <input id="option-use-liquid-sensors" name="option-use-liquid-sensors" type="checkbox"></input>
+                             Use liquid level sensors (check this only if you have the sensors installed)
+                        </label>
+                    </div>
+                    <div>
+                        <label for="option-use-shotbot-ui" class="checkbox">
+                             <input id="option-use-shotbot-ui" name="option-use-shotbot-ui" type="checkbox"></input>
+                             Allow users to use the Shots interface to dispense individual shots of booze.
+                        </label>
+                    </div>
+                    {% if not options.i_am_shotbot %}
+                        <div>
+                            <label for="option-show-feeling-lucky" class="checkbox">
+                                 <input id="option-show-feeling-lucky" name="option-show-feeling-lucky" type="checkbox"></input>
+                                 Show the <em>I'm feeling lucky button</em> to give the users the option to immediately
+                                 pour a random drink.
+                            </label>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <label class="checkbox">
+                             <input id="option-metric" name="option-metric" type="checkbox"></input>
+                             Use metric for all units shown in Bartendro
+                        </label>
+                    </div>
+                    <div class="div-spacer"></div>
+                    <span class="help-block">
+                        The username and password that must be given to use the admin features of Bartendro:
+                    </span>
+                    <div style="margin-left: 15px;">
+                        <label for="login-name">User name</label>
+                        <input id="login-name" name="login-name" type="text"></input>
+                    </div>
+                    <div style="margin-left: 15px;">
+                        <label for="login-passwd">Password</label>
+                        <input id="login-passwd" name="login-passwd" type="password"></input>
+                    </div>
+                    <span class="help-block">
+                        If you trust all the people in the wireless reach of Bartendro to not abuse it and/or 
+                        waste booze, you can allow anyone to pour drinks. If you'd like to only allow devices that are 
+                        logged into Bartendro to dispense drinks, enable this feature. Logging into the 
+                        admin section of Bartendro will allow that logged in user to dispense drinks:
+                    </span>
+                    <div style="margin-left: 15px;">
+                        <label class="checkbox">
+                             <input id="option-must-login-to-dispense" name="option-must-login-to-dispense" type="checkbox"></input>
+                             Require a valid user login to dispense drinks
+                        </label>
+                    </div>
+                </div>
+                <div class="div-spacer"></div>
+                <h4>Size options</h4>
+                <div style="margin-left: 15px">
+                    <span class="help-block">
+                        All values here are in milliliters (ml).
+                    </span>
+                    {% if not options.i_am_shotbot %}
+                        <div>
+                            <label for="option-drink-size">Default drink size</label>
+                            <input id="option-drink-size" name="option-drink-size" type="text"></input>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <label for="option-shot-size">Shot size (for ShotBot interface)</label>
+                        <input id="option-shot-size" name="option-shot-size" type="text"></input>
+                    </div>
+                    {% if not options.i_am_shotbot %}
+                        <div>
+                            <label for="option-taster-size">Taster size</label>
+                            <input id="option-taster-size" name="option-taster-size" type="text"></input>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <label for="option-test-dispense-size">Test dispense size</label>
+                        <input id="option-test-dispense-size" name="option-test-dispense-size" type="text"></input>
+                    </div>
+                </div>
+                <div class="div-spacer"/>
+                {% if not options.i_am_shotbot %}
+                    <h4>Drink options</h4>
+                    <div style="margin-left: 15px">
+                        <div>
+                            <label for="option-show-taster" class="checkbox">
+                                <input id="option-show-taster" name="option-show-taster" type="checkbox"></input>
+                                Show taster button
+                            </label>
+                        </div>
+                        <div>
+                            <label for="option-show-drink-size" class="checkbox">
+                                <input id="option-show-drink-size" name="option-show-drink-size" type="checkbox"></input>
+                                Allow users to change the drink size
+                            </label>
+                        </div>
+                        <div>
+                            <label for="option-show-strength" class="checkbox">
+                                <input id="option-show-strength" name="option-show-strength" type="checkbox"></input>
+                                Allow users to change the strength of their drinks
+                            </label>
+                        </div>
+                        <div>
+                            <label for="option-strength-steps">Number of strength steps to show</label>
+                            <select id="option-strength-steps" name="option-strength-steps">
+                               <option value="1">1</option>
+                               <option value="2">2</option>
+                            </select>
+                        </div>
+                    </div>
+                {% endif %}
+            </fieldset>
+        </form>
+        <div class="div-spacer">
+            <a class="btn btn-large btn-primary submit-button" onclick="save()">save and reboot</a>
+        </div>
+    </div>
+    <div class="span4 admin-box-full">
+        <h2>Network info</h2>
+        <div style="margin-bottom: 30px">
+            <div>
+            WiFi address: {{ wlan0 }}<br/>
+            Network address: {{ eth0 }} 
+            </div>
+            {% if show_passwd_recovery %}
+                <h4>Ooops</h4>
+                <div>
+                <a href="/admin/lost-passwd">I lost my username/password.</a>
+                </div>
+            {% endif %}
+        </div>
+        <h2>Software</h2>
+        <div style="margin-bottom: 30px">
+        Your software version is: {{ version }}
+        </div>
+        <h2>Database</h2>
+        <h4>Current schema</h4>
+        <div>
+        Your database schema version is: {{ schema }}
+        </div>
+        <div class="div-spacer"></div>
+        <h4>Database download</h4>
+        <div>
+        <p>
+        Bartendro's database contains all the information needed to run your Bartendro, including booze you've added, 
+        your drink recipes and a log of your drinks poured. This information is <b>not</b> automatically backed up
+        and you should make period backups of this data base using the two buttons below.
+        </p>
+
+        Download Bartendro's database to your local machine. We recommend saving this file to a DropBox account!
+        </div>
+        <div class="div-spacer"></div>
+        <div style="text-align: center">
+        <a class="btn btn-big" href="/ws/download/bartendro.db" id="database-download">download your database</a>
+        </div>
+        <div class="div-spacer"></div>
+        <h4>Database upload</h4>
+        <div>
+        <p>
+        If you've previously saved your Bartendro database and would like to upload this database to Bartendro,
+        use the button below.
+        </p>
+        <b>Warning:</b> This will overwrite your current database! All changes made to Bartendro's
+        database will be lost! We recommend downloading a copy of the database and stashing it in a safe place before
+        proceeding.
+        </div>
+        <div class="div-spacer"></div>
+        <div style="text-align: center">
+        <a class="btn btn-big btn-danger" href="/admin/upload" id="database-upload">upload a database</a>
+        </div>
+    </div>
+</div>
+<div id="reload-dialog" title="Bartendro" style="display: none; text-align: center;">
+  <p>
+    The options have been saved and Bartendro is restarting. 
+  </p>
+  <p>
+    Please wait.
+  </p>
+</div>
+<div id="manual-reload-dialog" title="Bartendro" style="display: none; text-align: center;">
+  <p>
+    The options have been saved. In order for these options to take effect, please 
+    restart Bartendro.
+  </p>
+</div>
+<script type="text/javascript" src="/static/js/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery.timer.js"></script>
+<script type="text/javascript" src="/static/js/jquery.validate.1.11.1.min.js"></script>
+<script type="text/javascript">
+
+var timer;
+var saved_login_name, saved_login_passwd;
+
+$(document).ready(function() 
+{
+    load();
+    $("#options-form").validate({ 
+         rules: {
+            'login-name' : {
+                required: true,
+                minlength: 2
+            },
+            'login-passwd' : {
+                required: true,
+                minlength: 4
+            },
+            'option-drink-size' : {
+                required: true,
+                minlength: 2,
+                maxlength: 3,
+                digits : true
+            },
+            'option-shot-size' : {
+                required: true,
+                minlength: 2,
+                maxlength: 3,
+                digits : true
+            },
+            'option-taster-size' : {
+                required: true,
+                minlength: 2,
+                maxlength: 3,
+                digits : true
+            },
+            'option-test-dispense-size' : {
+                required: true,
+                minlength: 2,
+                maxlength: 3,
+                digits : true
+            },
+            'option-strength-steps' : {
+                required: true,
+                minlength: 1,
+                maxlength: 1,
+                digits : true
+            }
+        }
+    });
+    timer = $.timer(function() { window.location.reload(); });
+});
+
+function set_message(txt)
+{
+    $("#status-message").text(txt);
+    $("#status-message").show();
+}
+function clear_message(txt)
+{
+    $("#status-message").text("");
+    $("#status-message").hide();
+}
+
+function load()
+{
+    $.ajax({
+            url: "/ws/options",
+            dataType : "json",
+            success: function(json)
+            {
+                set_options(json['options']);
+            },
+            error: function(xhr, txtStatus, errorThrown)
+            {
+                set_message("Failed to load options:" + xhr.status);
+            }
+    });
+}
+
+function set_options(opts)
+{
+    if (opts['use_liquid_level_sensors'])
+        $("#option-use-liquid-sensors").prop("checked", true);
+    else
+        $("#option-use-liquid-sensors").prop("checked", false);
+    if (opts['use_shotbot_ui'])
+        $("#option-use-shotbot-ui").prop("checked", true);
+    else
+        $("#option-use-shotbot-ui").prop("checked", false);
+    if (opts['show_feeling_lucky'])
+        $("#option-show-feeling-lucky").prop("checked", true);
+    else
+        $("#option-show-feeling-lucky").prop("checked", false);
+    if (opts['metric'])
+        $('#option-metric').prop("checked", true);
+    else
+        $('#option-metric').prop("checked", false);
+    if (opts['must_login_to_dispense'])
+        $('#option-must-login-to-dispense').prop("checked", true);
+    else
+        $('#option-must-login-to-dispense').prop("checked", false);
+
+    $('#login-name').val(opts['login_name']);
+    saved_login_name = opts['login_name'];
+    saved_login_passwd = opts['login_passwd'];
+    $('#login-passwd').val(opts['login_passwd']);
+    $('#option-drink-size').val(opts['drink_size']);
+    $('#option-shot-size').val(opts['shot_size']);
+    $('#option-taster-size').val(opts['taster_size']);
+    $('#option-test-dispense-size').val(opts['test_dispense_ml']);
+
+    if (opts['show_taster'])
+        $('#option-show-taster').prop("checked", true);
+    else
+        $('#option-show-taster').prop("checked", false);
+    if (opts['show_size'])
+        $('#option-show-drink-size').prop("checked", true);
+    else
+        $('#option-show-drink-size').prop("checked", false);
+    if (opts['show_strength'])
+        $('#option-show-strength').prop("checked", true);
+    else
+        $('#option-show-strength').prop("checked", false);
+    $('#option-strength-steps').val(opts['strength_steps']);
+}
+
+function save()
+{
+    if (!$("#options-form").valid())
+        return;
+
+    options = {};
+    options['use_liquid_level_sensors'] = $("#option-use-liquid-sensors").prop("checked") ? 1 : 0;
+    options['use_shotbot_ui'] = $("#option-use-shotbot-ui").prop("checked") ? 1 : 0;
+    options['show_feeling_lucky'] = $("#option-show-feeling-lucky").prop("checked") ? 1 : 0;
+    options['metric'] = $("#option-metric").prop("checked") ? 1 : 0;
+    options['must_login_to_dispense'] = $("#option-must-login-to-dispense").prop("checked") ? 1 : 0;
+    options['login_name'] = $("#login-name").val();
+    options['login_passwd'] = $("#login-passwd").val();
+    options['drink_size'] = $("#option-drink-size").val();
+    options['shot_size'] = $("#option-shot-size").val();
+    options['taster_size'] = $("#option-taster-size").val();
+    options['test_dispense_ml'] = $("#option-test-dispense-size").val();
+    options['show_taster'] = $("#option-show-taster").prop("checked") ? 1 : 0;
+    options['show_size'] = $("#option-show-drink-size").prop("checked") ? 1 : 0;
+    options['show_strength'] = $("#option-show-strength").prop("checked") ? 1 : 0;
+    options['strength_steps'] = $("#option-strength-steps").val();
+
+    j = {}
+    j['options'] = options;
+    if (options['login_name'] != saved_login_name || options['login_passwd'] != saved_login_passwd)
+        j['logout'] = 1;
+    else
+        j['logout'] = 0;
+
+    $.ajax({
+            url: "/ws/options",
+            type: "POST",
+            data : JSON.stringify(j),
+            dataType : "json",
+            contentType: "application/json; charset=utf-8",
+            success: function(json)
+            {
+                set_message("The options have been saved.");
+
+                if (json['reload'])
+                {
+                    timer.set({ time : 12000, autostart : true });
+                    $("#reload-dialog" ).dialog({ modal: true, closeOnEscape: false, dialogClass: "no-close" });
+                }
+                else
+                    $("#manual-reload-dialog").dialog({ buttons: [ { text: "Ok", click: function() { $( this ).dialog( "close" ); } } ] });
+            },
+            error: function(xhr, txtStatus, errorThrown)
+            {
+                set_message("Failed to save options. Status: " + xhr.status);
+            }
+    });
+}
+</script>
+{% endblock %}
