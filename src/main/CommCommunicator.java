@@ -127,4 +127,11 @@ public class CommCommunicator{
             e.printStackTrace();
         }
     }
+    
+    public static void main (String[] args) throws CommCommunicationException, InterruptedException{
+        CommCommunicator c = new CommCommunicator();
+//        c.moveBigArm(-5000, ARM_DIRECTION.VERTICAL, 1);
+        c.issueCommands(new String[]{"1R"});
+        c.finish();
+    }
 }

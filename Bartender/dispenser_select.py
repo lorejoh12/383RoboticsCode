@@ -2,7 +2,6 @@
 
 import sys
 import os
-import logging
 from time import sleep
 #from bartendro.error import I2CIOError
 
@@ -15,7 +14,6 @@ ROUTER_CMD_PING         = 253
 ROUTER_CMD_COUNT        = 254
 ROUTER_CMD_RESET        = 255
 
-log = logging.getLogger('bartendro')
 
 try:
     import smbus
@@ -68,15 +66,13 @@ class DispenserSelect(object):
         if self.software_only: return
 
         if smbus_missing:
-            log.error("You must install the smbus module!")
+            print "error: You must install the smbus module!"
             sys.exit(-1)
 
-        log.info("Opening I2C bus to router")
-        try:
-            self.router = smbus.SMBus(ROUTER_BUS)
-        except IOError:
-            raise I2CIOError
-        log.info("Done.")
+        print "Opening I2C bus to router"
+        self.router = smbus.SMBus(ROUTER_BUS)
+
+        print "Done."
 
 if __name__ == "__main__":
     ds = DispenserSelect(15, 0)

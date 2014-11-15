@@ -1,15 +1,19 @@
-import sys
-import os
+'''
+Created on Nov 13, 2014
+
+This is the class that controls the router for the Bartendro Pumps.
+The code is based off of the code provided with the pumps. For more
+information, see the bartendro github repository.
+
+@author: John Lorenz
+'''
+
 import collections
-import logging
-from subprocess import call
 from time import sleep, localtime, time
 import serial
 from struct import pack, unpack
 import pack7
 import dispenser_select
-#from bartendro.error import SerialIOError
-import random
 
 DISPENSER_DEFAULT_VERSION = 2
 DISPENSER_DEFAULT_VERSION_SOFTWARE_ONLY = 3
@@ -72,8 +76,6 @@ LED_PATTERN_CURRENT_SENSE = 4
 MOTOR_DIRECTION_FORWARD         = 1
 MOTOR_DIRECTION_BACKWARD        = 0
 
-log = logging.getLogger('bartendro')
-
 def crc16_update(crc, a):
     crc ^= a
     for i in xrange(0, 8):
@@ -87,14 +89,15 @@ class RouterDriver(object):
     '''This object interacts with the bartendro router controller.'''
 
     def __init__(self, device, software_only):
+        self.log = self
         self.device = device
         self.ser = None
         self.msg = ""
         self.ret = 0
         self.software_only = software_only
         self.dispenser_select = None
-        self.dispenser_version = DISPENSER_DEFAULT_VERSION
         self.startup_log = ""
+        self.dispenser_version = DISPENSER_DEFAULT_VERSION
         self.debug_levels = [ 200, 180, 120 ]
 
         # dispenser_ids are the ids the dispensers have been assigned. These are logical ids 
@@ -108,6 +111,9 @@ class RouterDriver(object):
             self.num_dispensers = MAX_DISPENSERS
         else:
             self.num_dispensers = 0 
+
+    def info(self, a):
+        print a
 
     def get_startup_log(self):
         return self.startup_log
@@ -136,20 +142,19 @@ class RouterDriver(object):
 
         self._clear_startup_log()
 
-        try:
-            log.info("Opening %s" % self.device)
-            self.ser = serial.Serial(self.device, 
-                                     BAUD_RATE, 
-                                     bytesize=serial.EIGHTBITS, 
-                                     parity=serial.PARITY_NONE, 
-                                     stopbits=serial.STOPBITS_ONE,
-                                     timeout=.01)
-        except serial.serialutil.SerialException, e:
-            raise SerialIOError(e)
+        self.log.info("Opening %s" % self.device)
+        self.ser = serial.Serial(self.device, 
+                                 BAUD_RATE, 
+                                 bytesize=serial.EIGHTBITS, 
+                                 parity=serial.PARITY_NONE, 
+                                 stopbits=serial.STOPBITS_ONE,
+                                 timeout=.01)
 
-        log.info("Done.\n")
 
+        self.log.info("Done.\n")
+        
         import status_led
+
         self.status = status_led.StatusLED(self.software_only)
         self.status.set_color(0, 0, 1)
 
@@ -161,7 +166,7 @@ class RouterDriver(object):
         self.ser.write(chr(170) + chr(170) + chr(170))
         sleep(.001)
 
-        log.info("Discovering dispensers")
+        self.log.info("Discovering dispensers")
         self.num_dispensers = 0
         for port in xrange(MAX_DISPENSERS):
             self._log_startup("port %d:" % port)
@@ -209,12 +214,12 @@ class RouterDriver(object):
                         self.dispenser_ids[i] = 255
                         self.num_dispensers -= 1
 
-        self.dispenser_version = self.get_dispenser_version(0)
+        self.dispenser_version = self.get_dispenser_version()
         if self.dispenser_version < 0:
             self.dispenser_version = DISPENSER_DEFAULT_VERSION 
         else:
             self.status.swap_blue_green()
-        log.info("Detected dispensers version %d. (Only checked first dispenser)" % self.dispenser_version)
+        self.log.info("Detected dispensers version %d. (Only checked first dispenser)" % self.dispenser_version)
 
         self.led_idle()
 
@@ -234,11 +239,6 @@ class RouterDriver(object):
             self.cl.flush()
         except IOError:
             pass
-
-    def make_shot(self):
-        if self.software_only: return True
-        self._send_packet32(0, PACKET_TICK_DISPENSE, 90)
-        return True
 
     def ping(self, dispenser):
         if self.software_only: return True
@@ -363,21 +363,6 @@ class RouterDriver(object):
         if self.software_only: return True
         return self._send_packet16(dispenser, PACKET_SET_LIQUID_THRESHOLDS, low, out)
 
-    def set_motor_direction(self, dispenser, dir):
-        if self.software_only: return True
-        return self._send_packet8(dispenser, PACKET_SET_MOTOR_DIRECTION, dir)
-
-    def get_dispenser_version(self, dispenser):
-        if self.software_only: return DISPENSER_DEFAULT_VERSION_SOFTWARE_ONLY
-        if self._send_packet8(dispenser, PACKET_GET_VERSION, 0):
-            # set a short timeout, in case its a v2 dispenser
-            self.set_timeout(.1)
-            ack, ver, dummy = self._receive_packet16(True)
-            self.set_timeout(DEFAULT_TIMEOUT)
-            if ack == PACKET_ACK_OK:
-                return ver
-        return -1
-
     def set_status_color(self, red, green, blue):
         if self.software_only: return
         if not self.status: return
@@ -428,7 +413,6 @@ class RouterDriver(object):
         port = self.dispenser_ports[dispenser]
         self.dispenser_select.select(port)
 
-
     def _send_packet(self, dest, packet):
         if self.software_only: return True
 
@@ -461,7 +445,7 @@ class RouterDriver(object):
             if len(ch) < 1:
                 log.error("send packet: read timeout")
                 return False
-        except SerialException, err:
+        except Exception, err:
             log.error("SerialException: %s" % err);
             return False
 
@@ -598,5 +582,11 @@ class RouterDriver(object):
         self.startup_log = ""
 
     def _log_startup(self, txt):
-        log.info(txt)
+        self.log.info(txt)
         self.startup_log += "%s\n" % txt
+
+if __name__ == "__main__":
+    PC = RouterDriver('/dev/ttyAMA0', False)
+    PC.open()
+    PC.dispense_ticks(0xFF, 20)
+    

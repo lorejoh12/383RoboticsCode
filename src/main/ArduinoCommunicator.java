@@ -1,5 +1,4 @@
 package main;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import gnu.io.CommPortIdentifier; 
@@ -43,12 +42,11 @@ public class ArduinoCommunicator implements SerialPortEventListener {
 	//Opens connection
 	public void initialize() throws Exception{
 		CommPortIdentifier portId = null;
-		Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
+		Enumeration<?> portEnum = CommPortIdentifier.getPortIdentifiers();
 
 		// iterate through, looking for the port
 		while (portEnum.hasMoreElements()) {
 			CommPortIdentifier currPortId = (CommPortIdentifier) portEnum.nextElement();
-			//			System.out.println("currPortId.getName() = "+currPortId.getName() + "\n");
 			for (String portName : PORT_NAMES) {
 				if (currPortId.getName().equals(portName)) {
 					portId = currPortId;
