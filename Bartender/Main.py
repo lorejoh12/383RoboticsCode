@@ -15,7 +15,7 @@ import GripperCommunicator
 #arm_device = 'COM1'
 # pump_device = 'COM1'
 pump_device = '/dev/ttyAMA0' # the GPIO serial port on the RPI
-USB_devices = ['/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2', '/dev/ttyUSB3',
+USB_devices = [ '/dev/tty.PL2303-00001014', '/dev/tty.PL2303-00002014','/dev/tty.usbmodem1411', 'dev/tty.usbmodem1421', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2', '/dev/ttyUSB3',
                '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyACM2']
 
 BAUD_RATE = 9600
@@ -30,8 +30,8 @@ if __name__ == '__main__':
     gripper_communicator.open()
     
     #pump_communicator.dispense_ticks(0xFF, 20)
-    comm_communicator.moveArm(-4000, 1, 1)
-    #gripper_communicator.sendData('R')
+    comm_communicator.moveArm(-6000, 1, 1)
+    #gripper_communicator.sendData('L')
     sleep(2)
     #gripper_communicator.sendData('S')
 

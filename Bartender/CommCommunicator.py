@@ -67,7 +67,7 @@ class CommCommunicator(object):
     
     def moveArm(self, encoderCounts, direction, speed):
         commands = ["S", "A5", "V"+str(speed), "D"+str(encoderCounts), "G"]
-        for i in range(0, len(commands)):
+        for i in range(len(commands)):
             commands[i] = str(direction)+commands[i];
         
         commandsSuccessful = self.sendCommands(commands);
