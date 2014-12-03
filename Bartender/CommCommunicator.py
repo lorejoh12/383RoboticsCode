@@ -75,8 +75,9 @@ class CommCommunicator(object):
         return commandsSuccessful;
 
 if __name__ == '__main__':
-    USB_devices = ['/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2',
-                   '/dev/ttyUSB3', '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyACM2']
+    #USB_devices = ['/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2',
+    #               '/dev/ttyUSB3', '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyACM2']
+    USB_devices = ['COM1']
     CC = CommCommunicator(USB_devices)
     CC.open()
     c = '1'
