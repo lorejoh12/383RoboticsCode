@@ -60,7 +60,9 @@ class GripperCommunicator(object):
 
 if __name__ == '__main__':
     USB_devices = ['/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2', '/dev/ttyUSB3',
-                   '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyACM2']
+                   '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyACM2', 
+                   '/dev/tty.PL2303-00001014', '/dev/tty.PL2303-00002014',
+                   '/dev/tty.usbmodem1411', '/dev/tty.usbmodem1421']
     GC = GripperCommunicator(USB_devices)
     GC.open()
     c = '1'
