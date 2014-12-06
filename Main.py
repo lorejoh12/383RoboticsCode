@@ -152,7 +152,7 @@ if __name__ == '__main__':
     gripper_communicator = GripperCommunicator.GripperCommunicator(USB_devices)
     gripper_communicator.open()
     
-    pump_communicator.dispense_ml(6, 200)
+    #pump_communicator.dispense_ml(6, 200)
     comm_communicator.moveArm(-10000, 1, 1)
     gripper_communicator.sendData('R')
     sleep(2)
