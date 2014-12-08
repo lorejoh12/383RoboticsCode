@@ -109,7 +109,7 @@ def goZ(z):
                 zCount = 0
         else:
             if math.fabs(zCount + z) > 16000:
-                if (zCount - z) < 0:
+                if (-zCount) < z:
                     comm_communicator.moveArm(-16000, 1, 1)
                     zCount  -= 16000
                 else:
@@ -288,16 +288,15 @@ if __name__ == '__main__':
     """
     MAIN FUNCTION: Go through all of the orders and make the drinks, keep checking the list every 10 seconds for new orders
     """
-    kill = ""
-    while len(kill) == 0:
-        for i in range(len(orderList)):
-            if len(sizeList) == 0:
-                makeDrink(orderList[i])
-            else:
-                makeDrink(orderList[i], sizeList[i])
-        kill = raw_input_with_timeout("No more drinks in queue, would you like to stop operation?", 10)
-    goHome() #we're done for now, go back to the zero-zero position
-    
+#     kill = ""
+#     while len(kill) == 0:
+#         for i in range(len(orderList)):
+#             if len(sizeList) == 0:
+#                 makeDrink(orderList[i])
+#             else:
+#                 makeDrink(orderList[i], sizeList[i])
+#         kill = raw_input_with_timeout("No more drinks in queue, would you like to stop operation?", 10)
+#     goHome() #we're done for now, go back to the zero-zero position    
     """
     TEST SECTION
     """
@@ -307,6 +306,120 @@ if __name__ == '__main__':
     #drinkPos(5)
     #gripper_communicator.sendData('L')
     #gripper_communicator.sendData('S')
+    '''
+    test loop to take commands, input commands as method name and parameters separated by spaces variables may be passed in via a dictionary
+    mapping them to the correct values in the program
+    
+    issuable commands:
+    1. goto x y: goTo(x,y)
+    2. gox x: goX(x)
+    3. goz z: goZ(z)
+    4. drink i: drinkPos(i)
+    5. new: newDrink(12)
+    6. end: endDrink()
+    7. test: Test()
+    8. print: print the encoder count values 
+    9. make size liquid1 liquid2...liquidn
+    10. claw word: gripper_communicator.sendData(dVals[word])
+    9. done: stops the program
+    
+    Assumptions:
+    1. goto will be followed by 2 values, either variable names or encoder values
+    2. gox, goz, drink, and claw will be followed by one value
+        a. claw's "value" will be "right", "left", "open", "close", or "stop"
+        b. gox and goz will be followed by either variable names or encoder values
+        c. drink will be followed by a number between 1 and 5, signifying a drink position
+    3. new, end, test, print, and done will be followed by no values
+    4. make will be followed by at least 2 values, the size and the liquid(s) that will go into the drink
+    '''
+    dVals = {"xcount":xCount, "zcount":zCount, "xdrink1":xDrink1, "xdrink2":xDrink2, "xdrink3":xDrink3, "xdrink4":xDrink4, "xdrink5":xDrink5, "xblock": xBlock, "xholder":xHolder, "zpump":zPump, "zbar":zBar, "zholder":zHolder, "right": 'L', "left":'R', "open":'O', "close":'C', "stop":'S'}
+    comDrink = []
+    comSize = 12
+    comX = 0
+    comZ = 0
+    run = True
+    while run:
+        command = raw_input("Command: ")
+        params = command.split()
+        if params[0] == "done":
+            if len(params) != 1:
+                print "Not a valid command"
+            else:
+                run = False
+        elif params[0].lower() == "test":
+            if len(params) != 1:
+                print "Not a valid command"
+            else:
+                Test()
+        elif params[0].lower() == "goto":
+            if len(params) != 3:
+                print "Not a valid command"
+            else:
+                if params[1].lower() in dVals:
+                    comX = dVals[params[1]]
+                else:
+                    comX = int(params[1])
+                if params[2].lower() in dVals:
+                    comZ = dVals[params[2]]
+                else:
+                    comZ = int(params[2])
+                goTo(comX,comZ)
+        elif params[0].lower() == "gox":
+            if len(params) != 2:
+                print "Not a valid command"
+            else:
+                if params[1].lower() in dVals:
+                    comX = dVals[params[1]]
+                else:
+                    comX = int(params[1])
+                goX(comX)
+        elif params[0].lower() == "goz":
+            if len(params) != 1:
+                print "Not a valid command"
+            else:
+                if params[1].lower() in dVals:
+                    comZ = dVals[params[1]]
+                else:
+                    comZ = int(params[1])
+                goZ(comZ)
+        elif params[0].lower() == "new":
+            if len(params) != 1:
+                print "Not a valid command"
+            else:
+                newDrink(12)
+        elif params[0].lower() == "end":
+            if len(params) != 1:
+                print "Not a valid command"
+            else:
+                endDrink()
+        elif params[0].lower() == "drink":
+            if len(params) != 2:
+                print "Not a valid command"
+            else:
+                drinkPos(int(params[1]))
+        elif params[0].lower() == "claw":
+            if len(params) != 2:
+                print "Not a valid command"
+            else:
+                gripper_communicator.sendData(dVals[params[1]])
+        elif params[0].lower() == "print":
+            if len(params) != 1:
+                print "Not a valid command"
+            else:
+                print "xCount:", xCount
+                print "zCount:", zCount
+        elif params[0] == "make":
+            if len(params) < 3:
+                print "Not a valid command"
+            else:
+                comSize = params[1]
+                for i in range(len(params[2:])):
+                    comDrink.append(int(params[i+2]))
+                makeDrink(comDrink, comSize)
+        else:
+            print "Not a valid command"
+        
+                
     comm_communicator.close()
     #pump_communicator.close()
     gripper_communicator.close()
