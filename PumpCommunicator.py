@@ -5,7 +5,7 @@ This is the class that controls the router for the Bartendro Pumps.
 The code is based off of the code provided with the pumps. For more
 information, see the bartendro github repository.
 
-@author: John Lorenz
+@author: Bartendro (with some small changes by John Lorenz)
 '''
 
 import collections
@@ -517,7 +517,7 @@ class RouterDriver(object):
             ch = self.ser.read(1)
             if len(ch) < 1:
                 if not quiet:
-                    log.error("receive packet: response timeout")
+                    self.log.error("receive packet: response timeout")
                 return (PACKET_ACK_TIMEOUT, "")
 
             if (ord(ch) == 0xFF):
@@ -532,7 +532,7 @@ class RouterDriver(object):
         raw_packet = self.ser.read(RAW_PACKET_SIZE)
         if len(raw_packet) != RAW_PACKET_SIZE:
             if not quiet:
-                log.error("receive packet: timeout")
+                self.log.error("receive packet: timeout")
             ack = PACKET_ACK_TIMEOUT
 
         if ack == PACKET_ACK_OK:
@@ -540,7 +540,7 @@ class RouterDriver(object):
             if len(packet) != PACKET_SIZE:
                 ack = PACKET_ACK_INVALID
                 if not quiet:
-                    log.error("receive_packet: Unpacked length incorrect")
+                    self.log.error("receive_packet: Unpacked length incorrect")
 
             if ack == PACKET_ACK_OK:
                 received_crc = unpack("<H", packet[6:8])[0]
@@ -552,13 +552,13 @@ class RouterDriver(object):
 
                 if received_crc != crc:
                     if not quiet:
-                        log.error("receive_packet: CRC fail")
+                        self.log.error("receive_packet: CRC fail")
                     ack = PACKET_ACK_CRC_FAIL
 
         # Send the response back to the dispenser
         if self.ser.write(chr(ack)) != 1:
             if not quiet:
-                log.error("receive_packet: Send ack timeout!")
+                self.log.error("receive_packet: Send ack timeout!")
             ack = PACKET_ACK_TIMEOUT
 
         if ack == PACKET_ACK_OK:

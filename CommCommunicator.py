@@ -76,7 +76,7 @@ class CommCommunicator(object):
         return commandsSuccessful;
 
 if __name__ == '__main__':
-    USB_devices = ['/dev/tty.PL2303-00001014', '/dev/tty.PL2303-00002014','/dev/tty.usbmodem1411', '/dev/tty.usbmodem1421','/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2',
+    USB_devices = ['COM1', '/dev/tty.PL2303-00001014', '/dev/tty.PL2303-00002014','/dev/tty.usbmodem1411', '/dev/tty.usbmodem1421','/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2',
                    '/dev/ttyUSB3', '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyACM2']
     CC = CommCommunicator(USB_devices)
     CC.open()
