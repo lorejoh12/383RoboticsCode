@@ -9,7 +9,6 @@ hand on the arm. Rotates the wrist and opens and closes the grip.
 
 import serial
 from time import sleep
-from string import strip
 
 
 BAUD_RATE = 9600
@@ -55,27 +54,21 @@ class UnoCommunicator(object):
         self.ser.close()
         self.ser = None
     
-    def readFromUno(self):
-        c = self.ser.read(20)
-        return c
-        
-    def sendToUno(self, data):
+    def sendData(self, data):
         self.ser.write(data)
-        response = self.ser.read(20)
-        return response
+        return self.ser.read(20)
+
+    def readData(self):
+        return self.ser.read(20)
 
 if __name__ == '__main__':
-    USB_devices = ['COM3', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2', '/dev/ttyUSB3',
-                   '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyACM2', 
-                   '/dev/tty.PL2303-00001014', '/dev/tty.PL2303-00002014',
-                   '/dev/tty.usbmodem1411', '/dev/tty.usbmodem1421']
+    USB_devices = ['/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2', '/dev/ttyUSB3',
+                   '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyACM2']
     UC = UnoCommunicator(USB_devices)
     UC.open()
-#     c = '1'
-#     while c!=0:
-#         c = raw_input('Command: ')
-#         UC.sendData(c)
     while True:
-        c = UC.readFromUno()
+        c = UC.readData()
         if(c):
             print c
+        
+        

@@ -5,7 +5,7 @@ This is the class that controls the router for the Bartendro Pumps.
 The code is based off of the code provided with the pumps. For more
 information, see the bartendro github repository.
 
-@author: Bartendro (with some small changes by John Lorenz)
+@author: John Lorenz
 '''
 
 import collections
@@ -262,6 +262,8 @@ class RouterDriver(object):
 
     def dispense_ticks(self, dispenser, ticks, speed=255):
         if self.software_only: return True
+        if dispenser == 0xFF:
+		return self._send_packet16(dispenser, PACKET_TICK_SPEED_DISPENSE, ticks, speed)
         dispenser = dispenser - 1
         port = -1
         for i in range(0, len(self.dispenser_ports)):
@@ -453,7 +455,7 @@ class RouterDriver(object):
 
             ch = self.ser.read(1)
             t1 = time()
-            self.log.info("packet time: %f" % (t1 - t0))
+            #self.log.info("packet time: %f" % (t1 - t0))
             if len(ch) < 1:
                 self.log.info("send packet: read timeout")
                 return False
@@ -517,7 +519,7 @@ class RouterDriver(object):
             ch = self.ser.read(1)
             if len(ch) < 1:
                 if not quiet:
-                    self.log.error("receive packet: response timeout")
+                    log.error("receive packet: response timeout")
                 return (PACKET_ACK_TIMEOUT, "")
 
             if (ord(ch) == 0xFF):
@@ -532,7 +534,7 @@ class RouterDriver(object):
         raw_packet = self.ser.read(RAW_PACKET_SIZE)
         if len(raw_packet) != RAW_PACKET_SIZE:
             if not quiet:
-                self.log.error("receive packet: timeout")
+                log.error("receive packet: timeout")
             ack = PACKET_ACK_TIMEOUT
 
         if ack == PACKET_ACK_OK:
@@ -540,7 +542,7 @@ class RouterDriver(object):
             if len(packet) != PACKET_SIZE:
                 ack = PACKET_ACK_INVALID
                 if not quiet:
-                    self.log.error("receive_packet: Unpacked length incorrect")
+                    log.error("receive_packet: Unpacked length incorrect")
 
             if ack == PACKET_ACK_OK:
                 received_crc = unpack("<H", packet[6:8])[0]
@@ -552,13 +554,13 @@ class RouterDriver(object):
 
                 if received_crc != crc:
                     if not quiet:
-                        self.log.error("receive_packet: CRC fail")
+                        log.error("receive_packet: CRC fail")
                     ack = PACKET_ACK_CRC_FAIL
 
         # Send the response back to the dispenser
         if self.ser.write(chr(ack)) != 1:
             if not quiet:
-                self.log.error("receive_packet: Send ack timeout!")
+                log.error("receive_packet: Send ack timeout!")
             ack = PACKET_ACK_TIMEOUT
 
         if ack == PACKET_ACK_OK:
@@ -600,5 +602,5 @@ class RouterDriver(object):
 if __name__ == "__main__":
     PC = RouterDriver('/dev/ttyAMA0', False)
     PC.open()
-    PC.dispense_ticks(0xFF, 20)
+    PC.dispense_ticks(0xFF, 20)	
     
