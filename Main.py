@@ -15,8 +15,6 @@ import PumpCommunicator
 import GripperCommunicator
 import UnoCommunicator
 import math
-import thread
-import threading
 import random
 '''
 Movement notations:
@@ -29,9 +27,11 @@ Movement notations:
             i.  A value of "1" tells the arm to move vertically
             ii. A value of "2" tells the arm to move horizontally
         c. "c" tells the arm how fast to move
-            i.   "c" can be any value between 0 and 7, with 7 being the fastest speed
-            ii.  different speeds make the encoder counts go different distances
-            iii. as you increase the value of c, your encoder becomes less accurate
+            i.   "c" can be any value between 0 and an upper limit determined by the constant acceleration value of 5 m/s^2 of the arm
+            ii.  Different speeds make the encoder counts go different distances
+            iii. As you increase the value of c, your encoder becomes less accurate
+            iv. At the moment, the speed of the arm is set by the speed variable below which is being used for all moveArm() calls, changing this
+                variable will change the speed at which the robotic arm makes all of its movements
     2. The translation between encoder counts and physical distances is as follows (assuming a speed of "1"):
         a. When moving vertically, 5000 encoder counts will make the arm move ~3 inches
         b. When moving horizontally 5000 encoder counts will make the arm move ~5 inches
@@ -74,9 +74,10 @@ when the robot should move vertically or horizontally first. (you don't want the
 '''
 '''
 GoX and goZ each take an encoder count value and move the arm to the corresponding position, using the position information stored in xCount
-and zCount respectively.  xCount and zCount are updated as appropriate.  To account for the 16000 encoder count limit, the robot will only 
-move that much in one iteration of the while loop if asked to go further than that relative to its current position. goZ has a special
-case to account for going to the 0 position.
+and zCount respectively.  xCount and zCount are updated as appropriate.  The robotic arm does not like to go more than 16000 encoder counts 
+in any direction at one time.  To account for the 16000 encoder count limit, the robot will only  move that much in one iteration of the 
+while loop if asked to go further than that relative to its current position. goZ also has a special case to account for going to the 
+0 position.
 '''
 def goX(x):
     global xCount
@@ -136,7 +137,9 @@ def goTo(x, z):
 
 """
 goHome mimicks a built in function of the TQ10x controllers, telling the arm to go back to the 0,0 position, in lieu of having some kind of
-global counter, ideally, this function would be called before the robot is ever turned off
+global counter, ideally, this function would be called before the robot is ever turned off, and this is how it is currently implemented.
+For calibration purposes, since there is a motion limiter on the negative-x direction of the robot, the robot is actually asked to move to -500
+in the x direction, guaranteeing that it will stop at the 0 point.  It's xCount value is then manually set to 0
 """
 def goHome(): #go back to zero zero, should do this before turning off
     goTo(-500,0)
@@ -150,28 +153,29 @@ newDrink takes a drink size (in oz) and grabs a cup from the cup sleeve, lowers 
 
 To avoid hitting any objects involved in the path the order of operations is:
 1. Open claw 
-2. Rotate towards cup sleeve
-3. Go to the cup sleeve
-4. Close claw around cup 
-5. Lower to pump level
-6. Move back so that you won't hit the shelves when rotating towards the pumps
-7. Rotate towards the pumps
+2. Go to the farthest point in the x-direction without being able to hit the shelves
+3. Rotate towards the empty bar to receive an empty cup
+4. wait 10 seconds for somebody to give the claw the cup
+5. Close claw around cup 
+6. Straighten out
+7. Lower to the level of the pumps
+8. Turn towards the pumps
 
 This function has code written in it to account for two cup sleeves, one holding 12 oz cups and one holding 24 oz cups. The second sleeve
-has not been added to the robot yet, but as long as the size requested doesn't exceed 12, this shouldn't be an issue
+has not been added to the robot yet, and due to some minor difficulties, we do not currently incorporate the sleeves into our process.
+This is a good area for future groups to develop.
 """
 def newDrink(size): 
     gripper_communicator.sendData('O')#open before arriving at cup
     
-   # if int(size) <= 12 and int(size) > 0: #--> rotation code for different sleeves
-       # gripper_communicator.sendData('L')
+    # if int(size) <= 12 and int(size) > 0: #--> rotation code for different sleeves
+        # gripper_communicator.sendData('L')
         #gripper_communicator.sendData('S')
-   # elif int(size) <= 24 and int(size) > 12:
-       # gripper_communicator.sendData('R') #rotate arm toward larger sleeve
-       # gripper_communicator.sendData('S')
-        #need to change this to account for encoder on claw rotation
+    # elif int(size) <= 24 and int(size) > 12:
+        # gripper_communicator.sendData('R') #rotate arm toward larger sleeve
+        # gripper_communicator.sendData('S')
         
-   # goTo(xHolder, zHolder) #go to cup sleeve with open, rotated claw
+    # goTo(xHolder, zHolder) #go to cup sleeve with open, rotated claw
 
     goTo(xBlock, zBar)
     gripper_communicator.sendData('F') #go to bar opposite pumps to recieve cup
@@ -183,9 +187,11 @@ def newDrink(size):
     gripper_communicator.sendData('B') #face pumps
 
 """
-endDrink simply rotates 180 degrees from the last pump that it was at, elevates to the level of the bar on that side, waits 10 seconds for
-the customer to grab the drink, and then opens the claw to release the drink, then rotates back to the striaght-forward position.
-If the claw is at the 5th pump, it will need to back up before rotating, which is accounted for in this function.
+endDrink straightens out the claw from the last pump that it was at, elevates very high upwards (given to the zDone variable),
+rotates towards the empty bar, lowers towards the level of the bar, placing the cup on it, waits 10 seconds for the customer 
+to grab the drink, and then opens the claw to release the drink, waits 5 seconds for the customer to take the cup away, then 
+rotates back to the straight-forward position. If the claw is at the 5th pump, it will need to back up before rotating, 
+which is accounted for in this function.
 """
 def endDrink(): #give finished drink to customer, bar opposite the pumps
     if xCount > xBlock: #make sure you can rotate (i.e. you're last liquid wasn't 5)
@@ -200,7 +206,7 @@ def endDrink(): #give finished drink to customer, bar opposite the pumps
     gripper_communicator.sendData('S') #turn back to straight-forward
 
 """
-Drink Pos uses drink information in a given order to determine which pump to move to and then
+DrinkPos uses drink information in a given order to determine which pump to move to and then
 goes there
 """
 def drinkPos(liquid): #move to drink position, determine based liquid type - want to add code for pumps to work
@@ -219,49 +225,38 @@ def drinkPos(liquid): #move to drink position, determine based liquid type - wan
 
 """
 makeDrink uses the information from an order as input to incorporate the other functions and make a drink, the size parameter is in oz
-so the pump_communicator.dispense_ml function is used appropriately (29.5 ml == 1 oz)
+so the pump_communicator.dispense_ml function is used appropriately (29.5 ml == 1 oz).  In order to synchronize pump function and claw
+movement, the function waits for a "False" output to be sent from a given pump's is_dispensing(port) method before moving the claw to
+the next pump. The is_dispensing function uses pump ID's internal to the PumpCommunicator class, getting these ID's requires doing a
+guess-and-check-type search method (lines 241-245) to check pumping status (line 250).  There is also a check to make sure you never
+up in an endless loop in the off-chance that you aren't able to identify the correct pump port.
 """
 def makeDrink(order, size = 12):
     size = int(size)
     newDrink(size)
     for liquid in order: #list of liquids going into drink
- 	liquid = int(liquid)
- 	dispenser = pump[liquid - 1] - 1
- 	port = -1
- 	for i in range(len(pump_communicator.dispenser_ports)):
+        liquid = int(liquid)
+        dispenser = pump[liquid - 1] - 1
+        port = -1
+        for i in range(len(pump_communicator.dispenser_ports)):
             if pump_communicator.dispenser_ports[i] == dispenser:
                 port = i
         drinkPos(liquid)
         pump_communicator.dispense_ml(pump[liquid-1], 29.5*float(size)/float(len(order)), 200)
-	counter = 0
-	print "pump:",pump[liquid-1]
-	print "port:", port
-	while pump_communicator.is_dispensing(port)[0]:
-		if counter == 2000:
-			print "Endless loop"
-			break    
-		counter+=1
+        counter = 0
+        print "pump:",pump[liquid-1]
+        print "port:", port
+        while pump_communicator.is_dispensing(port)[0]:
+            if counter == 2000:
+                print "Endless loop"
+                break    
+            counter+=1
         sleep(1)
     endDrink()
 
 """
-This function, found on stack overflow asks for an input with a time limit on it, this allows us to keep the machine running even while
-there aren't any drinks to be made, until we manually tell it to stop.
-"""
-def raw_input_with_timeout(prompt, timeout=30.0):
-    print prompt,    
-    timer = threading.Timer(timeout, thread.interrupt_main)
-    astring = ""
-    try:
-        timer.start()
-        astring = raw_input(prompt)
-    except KeyboardInterrupt:
-        pass
-    timer.cancel()
-    return astring
-
-"""
-Test() makes the robot go to all of the pump positions and rotate towards the pumps, rotate back straight, and go to (0,0).
+Test() makes the robot go to all of the pump positions rotate towards the pumps,
+straighten back out, and go back to (0,0).
 Used as proof of concept and to verify each pump position
 """
 def Test():
@@ -270,28 +265,29 @@ def Test():
         print "Getting drink:", i
         if i == 5:
             goZ(zPump)
-           # gripper_communicator.sendData('L')
-           # gripper_communicator.sendData('S')
+            gripper_communicator.sendData('B')
             drinkPos(i)
         else:
             drinkPos(i) #test going to every position
-           # gripper_communicator.sendData('L')
-           # gripper_communicator.sendData('S')
+            gripper_communicator.sendData('B')
         print "Arrived at position:", i
         sleep(1)
-       # gripper_communicator.sendData('R')
-       # gripper_communicator.sendData('S')
+        gripper_communicator.sendData('S')
         print "Going home"
         goHome()
         print "Home"
-def TestRand(iter):
-	for i in range(iter):
-		a = random.randint(2,4)
-		b = random.randint(2,4)
-		c = random.randint(2,4)
-		print "Iteration:",i
-		print "Making Drink:",[a,b,c]
-		makeDrink([a,b,c],12)
+"""
+TestRand(its) takes an integer and for as many times as that value determines, it makes drinks using three random
+liquids.
+"""
+def TestRand(its):
+    for i in range(its):
+        a = random.randint(1,6)#this gets all values between 1-5 (cuts off top value)
+        b = random.randint(1,6)
+        c = random.randint(1,6)
+        print "Iteration:",i
+        print "Making Drink:",[a,b,c]
+        makeDrink([a,b,c],12)
 
 pump_device = '/dev/ttyAMA0' # the GPIO serial port on the RPI
 USB_devices = [ '/dev/tty.PL2303-00001014', '/dev/tty.PL2303-00002014','/dev/tty.usbmodem1411', '/dev/tty.usbmodem1421', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2', '/dev/ttyUSB3',
@@ -311,12 +307,29 @@ if __name__ == '__main__':
     uno_communicator = UnoCommunicator.UnoCommunicator(USB_devices)
     uno_communicator.open()
     """
-    MAIN FUNCTION: Go through all of the orders and make the drinks, keep checking the list every 10 seconds for new orders
+    MAIN FUNCTION:
+    This is what is actually executed when this module is run.  Comment it out and uncomment the
+    code in the testing section to enable user-input usage of the robot.
+    
+    The algorithm for the main assumes that the user doesn't have access to the Raspberry Pi
+    Raspbian OS and is as follows:
+    1. On startup, elevate 1000 encoder counts, signaling that it is listen for bluetooth input from the uno_communicator
+    2. If the bluetooth app sends a 0, stop operation
+    3. If the app sends an "H", send the arm to the 0, 0 position
+    4. otherwise look for a string of the following input, digits in the range 1-5 separated by spaces, with the final character being
+        a "*"
+        a. If the input is invalid, keep waiting for valid input
+        b. If the input is valid, make a 12oz drink divided even among each digit in the order
+        representing the mixture sequence of liquids sent by the order
+    Since the method is written to check the bluetooth input once per iteration of its whileloop
+    drinks can be queued together by being stored in the devices buffer until it is grabbed by this readData method
     """
     kill = ""
+    makeDrink([1,2,3,4,5], 12) #priming function - pump ~ 2oz in each pump to make sure that each pump is filled
     goZ(1000)
+    subDigit = "12345"
     while kill != "0":
-	c = uno_communicator.readData();
+        c = uno_communicator.readData();
         if "0" in c:
             kill = "0"
         elif c == "H":
@@ -328,9 +341,9 @@ if __name__ == '__main__':
             order = orderStr[0:orderStr.find("*")].strip().split()
             for o in order:
                 if len(o) != 1:
-		    valid = -1
-		    break
-		elif o.isdigit():
+                    valid = -1
+                    break
+                elif o in subDigit:
                     valid += 1
             if valid == len(order) and orderStr.count(" ") != len(orderStr) and len(order) != 0:
                 makeDrink(order, 12)
@@ -338,142 +351,150 @@ if __name__ == '__main__':
 
         
     """
-    TEST SECTION
+    TEST SECTION - comment out the MAIN FUNCTION code above and uncomment this code below to run user-input operation of the machine
     """
-    #Test()
-    #pump_communicator.dispense_ml(6, 200)
-    #goZ(10000)
-    #drinkPos(5)
-    #gripper_communicator.sendData('L')
-    #gripper_communicator.sendData('S')
+
     '''
-    test loop to take commands, input commands as method name and parameters separated by spaces variables may be passed in via a dictionary
-    mapping them to the correct values in the program
+    Below is a test loop to take commands, input commands as method name and parameters separated by spaces variables may be passed 
+    in via a dictionary mapping them to the correct values in the program
     
     issuable commands:
-    1. goto x y: goTo(x,y)
-    2. gox x: goX(x)
-    3. goz z: goZ(z)
-    4. drink i: drinkPos(i)
-    5. new: newDrink(12)
-    6. end: endDrink()
-    7. test: Test()
-    8. print: print the encoder count values 
-    9. make size liquid1 liquid2...liquidn
-    10. claw word: gripper_communicator.sendData(dVals[word])
-    9. done: stops the program
+    1.  goto x y: goTo(x,y)
+    2.  gox x: goX(x)
+    3.  goz z: goZ(z)
+    4.  drink i: drinkPos(i)
+    5.  new: newDrink(12)
+    6.  end: endDrink()
+    7.  test: Test()
+    8.  rand i: TestRand(i)  
+    9.  print: print the encoder count values 
+    10. make size liquid1 liquid2...liquidn: makeDrink([liquid1...], size)
+    11. pump i size: pump_communicator.dispense(pump[i-1], size, 200) 
+    12. claw word: gripper_communicator.sendData(dVals[word])
+    13. speed i: speed = i
+    14. done: stops the program
     
     Assumptions:
     1. goto will be followed by 2 values, either variable names or encoder values
-    2. gox, goz, drink, and claw will be followed by one value
-        a. claw's "value" will be "right", "left", "open", "close", or "stop"
+    2. gox, goz, drink, rand, and claw will be followed by one value
+        a. claw's "value" will be "forward", "back", "straight", "open", or "close"
+            i.   "forward" turns the claw toward the empty bar
+            ii.  "back" turns the claw toward the pumps
+            iii. "straight" straightens out the claw 
         b. gox and goz will be followed by either variable names or encoder values
         c. drink will be followed by a number between 1 and 5, signifying a drink position
     3. new, end, test, print, and done will be followed by no values
     4. make will be followed by at least 2 values, the size and the liquid(s) that will go into the drink
+    5. pump will be followed by 2 values, the pump to engage (1-5), and the amount of liquid to be dispensed(in oz)
+    6. speed will be followed by one value
     '''
-##    dVals = {"xcount":xCount, "zcount":zCount, "xdrink1":xDrink1, "xdrink2":xDrink2, "xdrink3":xDrink3, "xdrink4":xDrink4, "xdrink5":xDrink5, "xblock": xBlock, "xholder":xHolder, "zpump":zPump, "zdone":zDone, "zbar":zBar, "zholder":zHolder, "right": 'L', "left":'R', "open":'O', "close":'C', "straight":'S', "forward":'F', "back":B}
-##    comDrink = []
-##    comSize = 12
-##    comX = 0
-##    comZ = 0
-##    run = True
-##    while run:
-##        command = raw_input("Command: ")
-##        params = command.split()
-##        if params[0] == "done":
-##            if len(params) != 1:
-##                print "Not a valid command"
-##            else:
-##		goHome()
-##                run = False
-##        elif params[0].lower == "home":
-##	    if len(params) != 1:
-##		print "Not a valid command"
-##	    else:
-##		goHome() 
-## 	elif params[0].lower() == "test":
-##            if len(params) != 1:
-##                print "Not a valid command"
-##            else:
-##                Test()
-##        elif params[0].lower() == "rand":
-##            if len(params) != 2:
-##                print "Not a valid command"
-##            else:
-##                TestRand(int(params[1]))
-##        elif params[0].lower() == "goto":
-##            if len(params) != 3:
-##                print "Not a valid command"
-##            else:
-##                if params[1].lower() in dVals:
-##                    comX = dVals[params[1]]
-##                else:
-##                    comX = int(params[1])
-##                if params[2].lower() in dVals:
-##                    comZ = dVals[params[2]]
-##                else:
-##                    comZ = int(params[2])
-##                goTo(comX,comZ)
-##        elif params[0].lower() == "gox":
-##            if len(params) != 2:
-##                print "Not a valid command"
-##            else:
-##                if params[1].lower() in dVals:
-##                    comX = dVals[params[1]]
-##                else:
-##                    comX = int(params[1])
-##                goX(comX)
-##        elif params[0].lower() == "goz":
-##            if len(params) != 2:
-##                print "Not a valid command"
-##            else:
-##                if params[1].lower() in dVals:
-##                    comZ = dVals[params[1]]
-##                else:
-##                    comZ = int(params[1])
-##                goZ(comZ)
-##        elif params[0].lower() == "new":
-##            if len(params) != 1:
-##                print "Not a valid command"
-##            else:
-##                newDrink(12)
-##        elif params[0].lower() == "end":
-##            if len(params) != 1:
-##                print "Not a valid command"
-##            else:
-##                endDrink()
-##        elif params[0].lower() == "drink":
-##            if len(params) != 2:
-##                print "Not a valid command"
-##            else:
-##                drinkPos(int(params[1]))
-##        elif params[0].lower() == "claw":
-##            if len(params) != 2:
-##                print "Not a valid command"
-##            else:
-##                gripper_communicator.sendData(dVals[params[1]])
-##        elif params[0].lower() == "print":
-##            if len(params) != 1:
-##                print "Not a valid command"
-##            else:
-##                print "xCount:", xCount
-##                print "zCount:", zCount
-##        elif params[0] == "make":
-##            if len(params) < 3:
-##                print "Not a valid command"
-##            else:
-##                comSize = params[1]
-##                for i in range(len(params[2:])):
-##                    comDrink.append(int(params[i+2]))
-##                makeDrink(comDrink, comSize)
-##	elif params[0] == "pump":
-##		if len(params) != 3:
-##			print "Not a valid command"
-##		else:
-##			pump_communicator.dispense_ml(pump[int(params[1])-1], 29.5*float(params[2]), 200)
-##        else:
-##            print "Not a valid command"
+#     dVals = {"xcount":xCount, "zcount":zCount, "xdrink1":xDrink1, "xdrink2":xDrink2, "xdrink3":xDrink3, "xdrink4":xDrink4, "xdrink5":xDrink5, "xblock": xBlock, "xholder":xHolder, "zpump":zPump, "zdone":zDone, "zbar":zBar, "zholder":zHolder, "open":'O', "close":'C', "straight":'S', "forward":'F', "back":'B'}
+#     comDrink = []
+#     comSize = 12
+#     comX = 0
+#     comZ = 0
+#     run = True
+#     while run:
+#         command = raw_input("Command: ")
+#         params = command.split()
+#         if params[0] == "done":
+#             if len(params) != 1:
+#                 print "Not a valid command"
+#             else:
+#                 goHome()
+#                 run = False
+#         elif params[0].lower == "home":
+#             if len(params) != 1:
+#                 print "Not a valid command"
+#             else:
+#                 goHome() 
+#         elif params[0].lower() == "test":
+#             if len(params) != 1:
+#                 print "Not a valid command"
+#             else:
+#                 Test()
+#         elif params[0].lower() == "rand":
+#             if len(params) != 2:
+#                 print "Not a valid command"
+#             else:
+#                 TestRand(int(params[1]))
+#         elif params[0].lower() == "goto":
+#             if len(params) != 3:
+#                 print "Not a valid command"
+#             else:
+#                 if params[1].lower() in dVals:
+#                     comX = dVals[params[1]]
+#                 else:
+#                     comX = int(params[1])
+#                 if params[2].lower() in dVals:
+#                     comZ = dVals[params[2]]
+#                 else:
+#                     comZ = int(params[2])
+#                 goTo(comX,comZ)
+#         elif params[0].lower() == "gox":
+#             if len(params) != 2:
+#                 print "Not a valid command"
+#             else:
+#                 if params[1].lower() in dVals:
+#                     comX = dVals[params[1]]
+#                 else:
+#                     comX = int(params[1])
+#                 goX(comX)
+#         elif params[0].lower() == "goz":
+#             if len(params) != 2:
+#                 print "Not a valid command"
+#             else:
+#                 if params[1].lower() in dVals:
+#                     comZ = dVals[params[1]]
+#                 else:
+#                     comZ = int(params[1])
+#                 goZ(comZ)
+#         elif params[0].lower() == "new":
+#             if len(params) != 1:
+#                 print "Not a valid command"
+#             else:
+#                 newDrink(12)
+#         elif params[0].lower() == "end":
+#             if len(params) != 1:
+#                 print "Not a valid command"
+#             else:
+#                 endDrink()
+#         elif params[0].lower() == "drink":
+#             if len(params) != 2:
+#                 print "Not a valid command"
+#             else:
+#                 drinkPos(int(params[1]))
+#         elif params[0].lower() == "claw":
+#             if len(params) != 2:
+#                 print "Not a valid command"
+#             else:
+#                 gripper_communicator.sendData(dVals[params[1]])
+#         elif params[0].lower() == "print":
+#             if len(params) != 1:
+#                 print "Not a valid command"
+#             else:
+#                 print "xCount:", xCount
+#                 print "zCount:", zCount
+#         elif params[0] == "make":
+#             if len(params) < 3:
+#                 print "Not a valid command"
+#             else:
+#                 comSize = params[1]
+#                 for i in range(len(params[2:])):
+#                     comDrink.append(int(params[i+2]))
+#                 makeDrink(comDrink, comSize)
+#         elif params[0] == "pump":
+#             if len(params) != 3:
+#                 print "Not a valid command"
+#             else:
+#                 pump_communicator.dispense_ml(pump[int(params[1])-1], 29.5*float(params[2]), 200)
+#         elif params[0] == "speed":
+#             if len(params) != 2:
+#                 print "Not a valid command"
+#             else:
+#                 speed = params[1]
+#         else:
+#             print "Not a valid command"
         
                 
     comm_communicator.close()
